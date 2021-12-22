@@ -2,7 +2,6 @@ Problema1(X)
     if |X| == 0
         return 0, 0
     let LIS be an array of size |X| = {1}
-    LIS[0] = 1
     let maxLIS = 1, nLIS = |X|
     for i = 1 to |X| - 1
         let j = i - 1
