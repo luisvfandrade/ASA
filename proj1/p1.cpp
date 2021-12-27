@@ -31,6 +31,12 @@ sequence readSequence() {
     int value, c;
     sequence x;
 
+    //Empty line
+    if ((c = getchar()) == '\n')
+        return x;
+    else
+        ungetc(c, stdin);
+
     do {
         //Possible Integer Sequence Error
         if (scanf("%d", &value) == 0) {
@@ -52,7 +58,7 @@ vector<int> problem1(sequence x) {
     if (x.size == 0)
         return maxLis;
 
-    vector<int> lis(x.size, 1);
+    vector<int> lis(x.size, 1), numLis(x.size, 1);
     maxLis[0] = 1;
     
     for (int i = 1; i < x.size; i++) {
@@ -60,15 +66,19 @@ vector<int> problem1(sequence x) {
             if (x.values[j] < x.values[i]) {
                 if (lis[i] < lis[j] + 1) {
                     lis[i] = lis[j] + 1;
+                    numLis[i] = numLis[j];
                     if (lis[i] > maxLis[0]) {
                         maxLis[0] = lis[i];
-                        maxLis[1] = 1;
+                        maxLis[1] = numLis[i];
                     }
-                    else if  (lis[i] == maxLis[0])
-                        maxLis[1]++;
+                    else if (lis[i] == maxLis[0])
+                        maxLis[1] += numLis[i];
                 }
-                else if (lis[j] + 1 == maxLis[0])
-                    maxLis[1]++;
+                else if (lis[i] == lis[j] + 1) {
+                    numLis[i] += numLis[j];
+                    if (lis[i] == maxLis[0])
+                        maxLis[1] += numLis[j];
+                }
             }
         }
     }
@@ -81,27 +91,16 @@ int problem2(sequence x1, sequence x2) {
     if (x1.size == 0 || x2.size == 0)
         return maxLcis;
 
-    //Optimize spatial complexity.
-    sequence smaller, bigger;
-    if (x1.size <= x2.size) {
-        smaller = x1;
-        bigger = x2;
-    }
-    else {
-        smaller = x2;
-        bigger = x1;
-    }
-
-    vector<int> lcis(smaller.size, 0);
-    for (int i = 0; i < bigger.size; i++) {
+    vector<int> lcis(x2.size, 0);
+    for (int i = 0; i < x1.size; i++) {
         int currentLcis = 0;
-        for (int j = 0; j < smaller.size; j++) {
-            if (bigger.values[i] == smaller.values[j]) {
+        for (int j = 0; j < x2.size; j++) {
+            if (x1.values[i] == x2.values[j]) {
                 lcis[j] = max(lcis[j], currentLcis + 1);
                 if (lcis[j] > maxLcis)
                     maxLcis = lcis[j];
             }
-            else if (bigger.values[i] > smaller.values[j])
+            else if (x1.values[i] > x2.values[j])
                 currentLcis = max(lcis[j], currentLcis);
         }
     }
@@ -129,7 +128,10 @@ string resolve() {
     }
     else {
         sequence x1 = readSequence(), x2 = readSequence();
-        return to_string(problem2(x1, x2));
+        if (x1.size > x2.size)
+            return to_string(problem2(x1, x2));
+        else
+            return to_string(problem2(x2, x1));
     }
 }
 
