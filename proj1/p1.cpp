@@ -48,7 +48,7 @@ sequence readSequence() {
             x.size++;
         }
     }
-    while ((c = getchar()) != '\n' && c != EOF);
+    while ((c = getchar()) != '\n' && c != '\t' && c != EOF);
 
     return x;
 }
