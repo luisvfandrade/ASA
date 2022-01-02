@@ -9,6 +9,8 @@
 */
 
 #include <stdio.h>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -27,6 +29,7 @@ typedef struct sequence {
  * Funcoes:
 */
 
+/*
 sequence readSequence() {
     int value, c;
     sequence x;
@@ -50,6 +53,21 @@ sequence readSequence() {
     }
     while ((c = getchar()) != '\n' && c != '\t' && c != EOF);
 
+    return x;
+}
+*/
+
+sequence readSequence() {
+    sequence x;
+    string line;
+    int value;
+
+    getline(cin, line);
+    istringstream iss(line);
+    while (iss >> value) {
+        x.values.push_back(value);
+        x.size++;
+    }
     return x;
 }
 
