@@ -13,6 +13,11 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <map>
+
+#define P1 0
+#define P2_FIRST 1
+#define P2_SECOND 2
 
 using namespace std;
 
@@ -29,35 +34,7 @@ typedef struct sequence {
  * Funcoes:
 */
 
-/*
-sequence readSequence() {
-    int value, c;
-    sequence x;
-
-    //Empty line
-    if ((c = getchar()) == '\n')
-        return x;
-    else
-        ungetc(c, stdin);
-
-    do {
-        //Possible Integer Sequence Error
-        if (scanf("%d", &value) == 0) {
-            fprintf(stderr, "error: Invalid integer sequence.\n");
-            exit(1);
-        }
-        else {
-            x.values.push_back(value);
-            x.size++;
-        }
-    }
-    while ((c = getchar()) != '\n' && c != '\t' && c != EOF);
-
-    return x;
-}
-*/
-
-sequence readSequence() {
+sequence readSequence(int flag, map<int, int> *values = NULL) {
     sequence x;
     string line;
     int value;
@@ -65,6 +42,10 @@ sequence readSequence() {
     getline(cin, line);
     istringstream iss(line);
     while (iss >> value) {
+        if (flag == P2_SECOND && (*values)[value] == 0)
+            continue;
+        else if (flag == P2_FIRST)
+            values->insert(pair<int, int>(value, 1));
         x.values.push_back(value);
         x.size++;
     }
@@ -140,12 +121,13 @@ string resolve() {
     }
     
     if (problem == 1) {     
-        sequence x = readSequence();
+        sequence x = readSequence(P1);
         vector<int> results = problem1(x);
         return to_string(results[0]) + " " + to_string(results[1]);
     }
     else {
-        sequence x1 = readSequence(), x2 = readSequence();
+        map<int, int> values;
+        sequence x1 = readSequence(P2_FIRST, &values), x2 = readSequence(P2_SECOND, &values);
         if (x1.size > x2.size)
             return to_string(problem2(x1, x2));
         else
