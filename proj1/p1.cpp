@@ -54,6 +54,7 @@ sequence readSequence(int flag, map<int, int> *values = NULL) {
 
 vector<int> problem1(sequence x) {
     vector<int> maxLis{0, x.size};
+    
     if (x.size == 0)
         return maxLis;
 
