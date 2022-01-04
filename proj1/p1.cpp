@@ -57,13 +57,14 @@ vector<int> problem1(sequence x) {
     if (x.size == 0)
         return maxLis;
 
-    vector<int> lis(x.size, 1), numLis(x.size, 1);
     maxLis[0] = 1;
-    
+    vector<int> lis(x.size, 1), numLis(x.size, 1);
     for (int i = 1; i < x.size; i++) {
         for (int j = i - 1; j >= 0; j--) {
             if (x.values[j] < x.values[i]) {
-                if (lis[i] < lis[j] + 1) {
+                if (lis[i] > lis[j] + 1)
+                    continue;
+                else if (lis[i] < lis[j] + 1) {
                     lis[i] = lis[j] + 1;
                     numLis[i] = numLis[j];
                     if (lis[i] > maxLis[0]) {
@@ -73,7 +74,7 @@ vector<int> problem1(sequence x) {
                     else if (lis[i] == maxLis[0])
                         maxLis[1] += numLis[i];
                 }
-                else if (lis[i] == lis[j] + 1) {
+                else {
                     numLis[i] += numLis[j];
                     if (lis[i] == maxLis[0])
                         maxLis[1] += numLis[j];
@@ -86,22 +87,34 @@ vector<int> problem1(sequence x) {
 }
 
 int problem2(sequence x1, sequence x2) {
-    int maxLcis = 0;
+    int maxLcis = 0, currLcis = 0;
+    sequence *smaller, *bigger;
+
     if (x1.size == 0 || x2.size == 0)
         return maxLcis;
+    else if (x1.size > x2.size) {
+        smaller = &x2;
+        bigger = &x1;
+    }
+    else {
+        smaller = &x1;
+        bigger = &x2;
+    }
 
-    vector<int> lcis(x2.size, 0);
-    for (int i = 0; i < x1.size; i++) {
-        int currentLcis = 0;
-        for (int j = 0; j < x2.size; j++) {
-            if (x1.values[i] == x2.values[j]) {
-                lcis[j] = max(lcis[j], currentLcis + 1);
+    vector<int> lcis(smaller->size, 0);
+    for (int i = 0; i < bigger->size; i++) {
+        for (int j = 0; j < smaller->size; j++) {
+            if (bigger->values[i] < smaller->values[j])
+                continue;
+            else if (bigger->values[i] == smaller->values[j]) {
+                lcis[j] = max(lcis[j], currLcis + 1);
                 if (lcis[j] > maxLcis)
                     maxLcis = lcis[j];
             }
-            else if (x1.values[i] > x2.values[j])
-                currentLcis = max(lcis[j], currentLcis);
+            else
+                currLcis = max(lcis[j], currLcis);
         }
+        currLcis = 0;
     }
 
     return maxLcis;
@@ -128,10 +141,7 @@ string resolve() {
     else {
         map<int, int> values;
         sequence x1 = readSequence(P2_FIRST, &values), x2 = readSequence(P2_SECOND, &values);
-        if (x1.size > x2.size)
-            return to_string(problem2(x1, x2));
-        else
-            return to_string(problem2(x2, x1));
+        return to_string(problem2(x1, x2));
     }
 }
 
