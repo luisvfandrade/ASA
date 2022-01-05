@@ -27,7 +27,7 @@ using namespace std;
 
 typedef struct sequence {
     vector<int> values;
-    int size = 0;
+    long int size = 0;
 } sequence;
 
 /*
@@ -52,8 +52,8 @@ sequence readSequence(int flag, map<int, int> *values = NULL) {
     return x;
 }
 
-vector<int> problem1(sequence x) {
-    vector<int> maxLis{0, x.size};
+vector<long int> problem1(sequence x) {
+    vector<long int> maxLis{0, x.size};
     
     if (x.size == 0)
         return maxLis;
@@ -136,7 +136,7 @@ string resolve() {
     
     if (problem == 1) {     
         sequence x = readSequence(P1);
-        vector<int> results = problem1(x);
+        vector<long int> results = problem1(x);
         return to_string(results[0]) + " " + to_string(results[1]);
     }
     else {
