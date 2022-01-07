@@ -59,9 +59,9 @@ vector<long int> problem1(sequence x) {
         return maxLis;
 
     maxLis[0] = 1;
-    vector<int> lis(x.size, 1), numLis(x.size, 1);
-    for (int i = 1; i < x.size; i++) {
-        for (int j = i - 1; j >= 0; j--) {
+    vector<long int> lis(x.size, 1), numLis(x.size, 1);
+    for (long int i = 1; i < x.size; i++) {
+        for (long int j = i - 1; j >= 0; j--) {
             if (x.values[j] < x.values[i]) {
                 if (lis[i] > lis[j] + 1)
                     continue;
