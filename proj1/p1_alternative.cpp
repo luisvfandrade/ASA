@@ -34,7 +34,7 @@ typedef struct sequence {
  * Funcoes:
 */
 
-sequence readSequence(int flag, map<int, int> *values = NULL) {
+sequence readSequence(int flag, map<int, int> *values1 = NULL, map<int, int> *values2 = NULL) {
     sequence x;
     string line;
     int value;
@@ -42,10 +42,13 @@ sequence readSequence(int flag, map<int, int> *values = NULL) {
     getline(cin, line);
     istringstream iss(line);
     while (iss >> value) {
-        if (flag == P2_SECOND && (*values)[value] == 0)
-            continue;
+        if (flag == P2_SECOND)
+            if ((*values1)[value] == 0)
+                continue;
+            else
+                values2->insert(pair<int, int>(value, 1));
         else if (flag == P2_FIRST)
-            values->insert(pair<int, int>(value, 1));
+            values1->insert(pair<int, int>(value, 1));
         x.values.push_back(value);
         x.size++;
     }
@@ -87,38 +90,31 @@ vector<long int> problem1(sequence x) {
     return maxLis;
 }
 
-int problem2(sequence x1, sequence x2) {
-    int maxLcis = 0, currLcis = 0;
-    sequence *smaller, *bigger;
+int problem2(sequence x1, sequence x2, sequence x3) {
+    typedef int Matrix[x2.size + 1][x1.size + 1];
+    Matrix table1, table2;
+    Matrix *previous = &table1, *current = &table2, *aux;
 
-    if (x1.size == 0 || x2.size == 0)
-        return maxLcis;
-    else if (x1.size > x2.size) {
-        smaller = &x2;
-        bigger = &x1;
-    }
-    else {
-        smaller = &x1;
-        bigger = &x2;
-    }
+    if (x1.size == 0 || x2.size == 0 || x3.size == 0)
+        return 0;
 
-    vector<int> lcis(smaller->size, 0);
-    for (int i = 0; i < bigger->size; i++) {
-        for (int j = 0; j < smaller->size; j++) {
-            if (bigger->values[i] < smaller->values[j])
-                continue;
-            else if (bigger->values[i] == smaller->values[j]) {
-                lcis[j] = max(lcis[j], currLcis + 1);
-                if (lcis[j] > maxLcis)
-                    maxLcis = lcis[j];
+    for (int i = 0; i < x3.size + 1; i++) {
+        aux = previous;
+        previous = current;
+        current = aux;
+        for (int j = 0; j < x2.size + 1; j++) {
+            for (int k = 0; k < x1.size + 1; k++) {
+                if (i == 0 || j == 0 || k == 0)
+                    (*current)[j][k] = 0;
+                else if (x3.values[i - 1] == x2.values[j - 1] && x2.values[j - 1] == x1.values[k - 1])
+                    (*current)[j][k] = (*previous)[j - 1][k - 1] + 1;
+                else
+                    (*current)[j][k] = max(max((*current)[j - 1][k], (*current)[j][k - 1]), (*previous)[j][k]);
             }
-            else
-                currLcis = max(lcis[j], currLcis);
         }
-        currLcis = 0;
     }
 
-    return maxLcis;
+    return (*current)[x2.size][x1.size];
 }
 
 string resolve() {
@@ -140,9 +136,20 @@ string resolve() {
         return to_string(results[0]) + " " + to_string(results[1]);
     }
     else {
-        map<int, int> values;
-        sequence x1 = readSequence(P2_FIRST, &values), x2 = readSequence(P2_SECOND, &values);
-        return to_string(problem2(x1, x2));
+        map<int, int> x1Values, commonValues;
+        sequence x1 = readSequence(P2_FIRST, &x1Values), x2 = readSequence(P2_SECOND, &x1Values, &commonValues), x3;
+        for (int i = 0; i < x1.size; i++) {
+            if (commonValues[x1.values[i]] == 0) {
+                x1.values.erase(x1.values.begin() + i);
+                x1.size--;
+                i--;
+            }
+        }
+        for (map<int,int>::iterator it = commonValues.begin(); it != commonValues.end(); ++it) {
+            x3.values.push_back(it->first);
+            x3.size++;
+        }
+        return to_string(problem2(x1, x2, x3));
     }
 }
 
