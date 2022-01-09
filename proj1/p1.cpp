@@ -1,6 +1,6 @@
 /*
  * Ficheiro: p1.cpp
- * Autor: Luis Freire D'Andrade (No 94179), Joana Maria de Brito (No 96037)
+ * Autor: Luis Freire D'Andrade (N94179), Joana Maria de Brito (N96037)
  * Descricao: Projeto 1 de ASA: desenvolvimento, em linguagem C++, de dois problemas, LIS e LCIS.
 */
 

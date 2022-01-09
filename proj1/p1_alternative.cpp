@@ -90,31 +90,49 @@ vector<long int> problem1(sequence x) {
     return maxLis;
 }
 
-int problem2(sequence x1, sequence x2, sequence x3) {
-    typedef int Matrix[x2.size + 1][x1.size + 1];
-    Matrix table1, table2;
-    Matrix *previous = &table1, *current = &table2, *aux;
+int problem2(sequence x1, sequence x2, map<int, int> common) {
+    int **current, **previous, **aux, solution;
+    sequence x3;
+    for (map<int,int>::iterator it = common.begin(); it != common.end(); ++it) {
+        x3.values.push_back(it->first);
+        x3.size++;
+    }
 
     if (x1.size == 0 || x2.size == 0 || x3.size == 0)
         return 0;
 
+    current = new int*[x2.size + 1];
+    previous = new int*[x2.size + 1];
+    for (int i = 0; i < x2.size + 1; i++) {
+        current[i] = new int[x1.size + 1];
+        previous[i] = new int[x1.size + 1];
+    }
+
     for (int i = 0; i < x3.size + 1; i++) {
-        aux = previous;
-        previous = current;
-        current = aux;
+        aux = current;
+        current = previous;
+        previous = aux;
         for (int j = 0; j < x2.size + 1; j++) {
             for (int k = 0; k < x1.size + 1; k++) {
                 if (i == 0 || j == 0 || k == 0)
-                    (*current)[j][k] = 0;
+                    current[j][k] = 0;
                 else if (x3.values[i - 1] == x2.values[j - 1] && x2.values[j - 1] == x1.values[k - 1])
-                    (*current)[j][k] = (*previous)[j - 1][k - 1] + 1;
+                    current[j][k] = previous[j - 1][k - 1] + 1;
                 else
-                    (*current)[j][k] = max(max((*current)[j - 1][k], (*current)[j][k - 1]), (*previous)[j][k]);
+                    current[j][k] = max(max(current[j - 1][k], current[j][k - 1]), previous[j][k]);
             }
         }
     }
+    solution = current[x2.size][x1.size];
 
-    return (*current)[x2.size][x1.size];
+    for (int i = 0; i < x2.size + 1; i++) {
+        delete [] current[i];
+        delete [] previous[i];
+    }
+    delete [] current;
+    delete [] previous;
+
+    return solution;
 }
 
 string resolve() {
@@ -136,20 +154,15 @@ string resolve() {
         return to_string(results[0]) + " " + to_string(results[1]);
     }
     else {
-        map<int, int> x1Values, commonValues;
-        sequence x1 = readSequence(P2_FIRST, &x1Values), x2 = readSequence(P2_SECOND, &x1Values, &commonValues), x3;
-        for (int i = 0; i < x1.size; i++) {
-            if (commonValues[x1.values[i]] == 0) {
-                x1.values.erase(x1.values.begin() + i);
-                x1.size--;
-                i--;
+        map<int, int> auxValues, commonValues;
+        sequence aux = readSequence(P2_FIRST, &auxValues), x1, x2 = readSequence(P2_SECOND, &auxValues, &commonValues);
+        for (int i = 0; i < aux.size; i++) {
+            if (commonValues[aux.values[i]] == 1) {
+                x1.values.push_back(aux.values[i]);
+                x1.size++;
             }
         }
-        for (map<int,int>::iterator it = commonValues.begin(); it != commonValues.end(); ++it) {
-            x3.values.push_back(it->first);
-            x3.size++;
-        }
-        return to_string(problem2(x1, x2, x3));
+        return to_string(problem2(x1, x2, commonValues));
     }
 }
 
