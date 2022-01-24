@@ -92,7 +92,7 @@ bool Graph::cycleUtil(int node, int *visited, int *path) {
 }
 
 void Graph::revUtil(int flag, int node, int *visited, map<int, int> *attainables1, int *count = NULL, map<int, int> *attainables2 = NULL) {
-    int initialCount = 0;
+    int initialCount;
 
     visited[node] = 1;
     if (flag == DFS_V2) initialCount = *count;
@@ -190,7 +190,7 @@ string resolve() {
         fprintf(stderr, "error: The first line must only contain v1 and v2.\n");
         exit(1);
     }
-    else if (scanf("%d %d", &nodes, &edges) != 2 || nodes <= 0 || edges <= 0) {
+    else if (scanf("%d %d", &nodes, &edges) != 2 || nodes <= 0 || edges < 0) {
         fprintf(stderr, "error: V and/or E of the graph not valid.\n");
         exit(1);
     }
