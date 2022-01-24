@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <vector>
+#include <map>
 #include <string>
 #include <iostream>
 
@@ -19,8 +20,9 @@ using namespace std;
  * Constantes:
 */
 
-#define DFS 0
-#define CYCLE 1
+#define CYCLE 0
+#define DFS_V1 1
+#define DFS_V2 2
 
 /*
  * Estruturas:
@@ -29,7 +31,6 @@ using namespace std;
 typedef struct nodeInfo {
     int inDegree = 0;
     int outDegree = 0;
-    int source = 1;
 } nodeInfo;
 
 /*
@@ -51,78 +52,116 @@ class Graph {
             nodesInfo.resize(nodes);
         }
 
-        void addEdge(int v1, int v2) {
+        bool addEdge(int v1, int v2) {
             adjList[v1 - 1].push_back(v2 - 1);
             revList[v2 - 1].push_back(v1 - 1);
             nodesInfo[v2 - 1].inDegree++;
             nodesInfo[v1 - 1].outDegree++;
-            nodesInfo[v2 - 1].source = 0;
 
             if (nodesInfo[v2 - 1].inDegree > 2) {
-                // Para Submeter: Tirar Prints!
-                fprintf(stderr, "error: The graph must be a genealogical tree.\n");
-                exit(1);
+                return false;
             }
+            else if (nodesInfo[v1 - 1].outDegree > 2) {
+                return false;
+            }
+            return true;
         }
 
-        void cycleUtil(int node, int *visited, int *path);
+        bool cycleUtil(int node, int *visited, int *path);
 
-        void dfsUtil(int node, int *visited);
+        void revUtil(int flag, int node, int *visited, map<int, int> *attainables1, int *count, map<int, int> *attainables2);
 
-        void dfs(int flag);
+        bool dfs(int flag, int *node, map<int, int> *attainables1, map<int, int> *attainables2);
+
+        vector<int> lca(int v1, int v2);
 };
 
-void Graph::cycleUtil(int node, int *visited, int *path) {
+bool Graph::cycleUtil(int node, int *visited, int *path) {
     visited[node] = 1;
     path[node] = 1;
 
     for(vector<int>::iterator i = adjList[node].begin(); i != adjList[node].end(); ++i) {
-        if (visited[*i] == 0)
-            cycleUtil(*i, visited, path);
+        if (visited[*i] == 0 && cycleUtil(*i, visited, path))
+            return true;
         else if (path[*i] == 1) {
-            fprintf(stderr, "error: The graph must be a genealogical tree.\n");
-            exit(1);
+            return true;
         }
     }
     path[node] = 0;
+    return false;
 }
 
-void Graph::dfsUtil(int node, int *visited) {
+void Graph::revUtil(int flag, int node, int *visited, map<int, int> *attainables1, int *count = NULL, map<int, int> *attainables2 = NULL) {
+    int initialCount = 0;
+
     visited[node] = 1;
- 
-    for (vector<int>::iterator i = adjList[node].begin(); i != adjList[node].end(); ++i)
-        if (visited[*i] == 0)
-            dfsUtil(*i, visited);
+    if (flag == DFS_V2) initialCount = *count;
+
+    for (vector<int>::iterator i = revList[node].begin(); i != revList[node].end(); ++i) {
+        if (visited[*i] == 1)
+            continue;
+        else if (flag == DFS_V1) {
+            (*attainables1)[*i] = 1;
+            revUtil(flag, *i, visited, attainables1);
+        }
+        else {
+            if ((*attainables1)[*i] == 1) {
+                (*attainables2)[*i] = *count;
+                (*count)++;
+            }
+            revUtil(flag, *i, visited, attainables1, count, attainables2);
+        }
+        if (flag == DFS_V2) (*count) = initialCount;
+    }
 }
 
-void Graph::dfs(int flag) {
+bool Graph::dfs(int flag, int *node = NULL, map<int, int> *attainables1 = NULL, map<int, int> *attainables2 = NULL) {
     int *visited = new int[nodes](), *path;
-    if (flag == CYCLE) path = new int[nodes]();
-
-    for (int i = 0; i < nodes; i++) {
-        if (nodesInfo[i].source == 0)
-            continue;
-        if (flag == CYCLE) {
-            if (visited[i] == 1)
-                path[i] = 0;
-            else 
-                cycleUtil(i, visited, path);
-        }
-        else
+    
+    if (flag == CYCLE) {
+        path = new int[nodes]();
+        for (int i = 0; i < nodes; i++) {
             if (visited[i] == 0)
-                dfsUtil(i, visited);
+                if (cycleUtil(i, visited, path))
+                    return false;
+        }
     }
+    else if (flag == DFS_V1)
+        revUtil(flag, *node, visited, attainables1);
+    else {
+        int count = 0;
+        revUtil(flag, *node, visited, attainables1, &count, attainables2);
+    }
+    return true;
+}
+
+vector<int> Graph::lca(int v1, int v2) {
+    vector<int> results;
+    map<int, int> attainablesV1, attainablesCommon;
+
+    attainablesV1[v1] = 1;
+    dfs(DFS_V1, &v1, &attainablesV1);
+
+    if (attainablesV1[v2] == 1)
+        results.push_back(v2);
+    else {
+        dfs(DFS_V2, &v2, &attainablesV1, &attainablesCommon);
+        for (map<int, int>::iterator i = attainablesCommon.begin(); i != attainablesCommon.end(); ++i) {
+            if (i->second == 0)
+                results.push_back(i->first);
+        }
+    }
+    return results;
 }
 
 /*
  * Funções:
 */
    
-Graph buildGraph(int nodes, int edges) {
+bool buildGraph(Graph &g) {
     char c;
-    Graph g(nodes, edges);
 
-    for (int i = 0; i < edges; i++) {
+    for (int i = 0; i < g.edges; i++) {
         int x, y;
         if (scanf("%d %d", &x, &y) != 2 || x <= 0 || y <= 0) {
             fprintf(stderr, "error: Edge not valid.\n");
@@ -133,13 +172,14 @@ Graph buildGraph(int nodes, int edges) {
             exit(1);
         }
 
-        g.addEdge(x, y);
+        if (!g.addEdge(x, y))
+            return false;
     }
-    return g;
+    return true;
 }
 
 string resolve() {
-    int v1, v2, nodes, edges;
+    int v1, v2, nodes, edges, solutionSize;
     char c;
 
     if (scanf("%d %d", &v1, &v2) != 2 || v1 <= 0 || v2 <= 0) {
@@ -150,8 +190,7 @@ string resolve() {
         fprintf(stderr, "error: The first line must only contain v1 and v2.\n");
         exit(1);
     }
-
-    if (scanf("%d %d", &nodes, &edges) != 2 || nodes <= 0 || edges <= 0) {
+    else if (scanf("%d %d", &nodes, &edges) != 2 || nodes <= 0 || edges <= 0) {
         fprintf(stderr, "error: V and/or E of the graph not valid.\n");
         exit(1);
     }
@@ -160,11 +199,23 @@ string resolve() {
         exit(1);
     }
 
-    Graph g = buildGraph(nodes, edges);
-    g.dfs(CYCLE);
-    
-    return "WE DID IT";
-    //return to_string() + " " + to_string();
+    vector<int> results;
+    string solution = "";
+    Graph g(nodes, edges);
+
+    if (!buildGraph(g) || !g.dfs(CYCLE))
+        return "0";
+        
+    results = g.lca(v1 - 1, v2 - 1);
+    if ((solutionSize = results.size()) == 0)
+        return "-";
+
+    vector<int>::iterator i = results.begin();
+    solution += to_string(*(i++) + 1);
+    for(; i != results.end(); ++i)
+        solution += " " + to_string(*i + 1);
+        
+    return solution;
 }
 
 /*
