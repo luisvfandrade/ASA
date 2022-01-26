@@ -1,6 +1,6 @@
 /*
  * Ficheiro: p2.cpp
- * Autor: Luis Freire D'Andrade (N94179), Joana Maria de Brito (N96037)
+ * Autor: Luis Freire D'Andrade (No 94179), Joana Maria de Brito (No 96037)
  * Descricao: Projeto 2 de ASA: desenvolvimento, em linguagem C++, de dois problemas, se um grafo G forma uma árvore geneologica, e o conjunto dos ancestrais comuns mais proximos entre dois vértices v1 e v2.
 */
 
@@ -10,7 +10,8 @@
 
 #include <stdio.h>
 #include <vector>
-#include <map>
+#include <set>
+#include <queue>
 #include <string>
 #include <iostream>
 
@@ -20,18 +21,8 @@ using namespace std;
  * Constantes:
 */
 
-#define CYCLE 0
-#define DFS_V1 1
-#define DFS_V2 2
-
-/*
- * Estruturas:
-*/
-
-typedef struct nodeInfo {
-    int inDegree = 0;
-    int outDegree = 0;
-} nodeInfo;
+#define BFS_V1 1
+#define BFS_V2 2
 
 /*
  * Classes:
@@ -41,7 +32,7 @@ class Graph {
     public:
         int nodes, edges;
         vector<vector<int>> adjList, revList;
-        vector<nodeInfo> nodesInfo;
+        vector<int> inDegrees;
 
     public:
         Graph(int n, int e) {
@@ -49,109 +40,118 @@ class Graph {
             edges = e;
             adjList.resize(nodes);
             revList.resize(nodes);
-            nodesInfo.resize(nodes);
+            inDegrees.resize(nodes);
         }
 
         bool addEdge(int v1, int v2) {
             adjList[v1 - 1].push_back(v2 - 1);
             revList[v2 - 1].push_back(v1 - 1);
-            nodesInfo[v2 - 1].inDegree++;
-            nodesInfo[v1 - 1].outDegree++;
-
-            if (nodesInfo[v2 - 1].inDegree > 2) {
+            inDegrees[v2 - 1]++;
+            if (inDegrees[v2 - 1] > 2)
                 return false;
-            }
-            else if (nodesInfo[v1 - 1].outDegree > 2) {
-                return false;
-            }
             return true;
         }
 
-        bool cycleUtil(int node, int *visited, int *path);
+        bool dfsCycle(int node, int *visited, int *path);
 
-        void revUtil(int flag, int node, int *visited, map<int, int> *attainables1, int *count, map<int, int> *attainables2);
+        bool genTree();
 
-        bool dfs(int flag, int *node, map<int, int> *attainables1, map<int, int> *attainables2);
+        void remLca(int node, int *visited, set<int> *parents, set<int> *lca);
 
-        vector<int> lca(int v1, int v2);
+        void bfsLca(int flag, int node, set<int> *parents, set<int> *lca);
+
+        set<int> lca(int v1, int v2);
 };
 
-bool Graph::cycleUtil(int node, int *visited, int *path) {
-    visited[node] = 1;
-    path[node] = 1;
+bool Graph::dfsCycle(int node, int *visited, int *path) {
+    if (visited[node] == 0) {
+        visited[node] = 1;
+        path[node] = 1;
 
-    for(vector<int>::iterator i = adjList[node].begin(); i != adjList[node].end(); ++i) {
-        if (visited[*i] == 0 && cycleUtil(*i, visited, path))
-            return true;
-        else if (path[*i] == 1) {
-            return true;
+        for(vector<int>::iterator i = adjList[node].begin(); i != adjList[node].end(); ++i) {
+            if (visited[*i] == 0 && dfsCycle(*i, visited, path))
+                return true;
+            else if (path[*i] == 1) {
+                return true;
+            }
         }
     }
     path[node] = 0;
     return false;
 }
 
-void Graph::revUtil(int flag, int node, int *visited, map<int, int> *attainables1, int *count = NULL, map<int, int> *attainables2 = NULL) {
-    int initialCount;
+bool Graph::genTree() {
+    int *visited = new int[nodes](), *path = new int[nodes]();
 
-    visited[node] = 1;
-    if (flag == DFS_V2) initialCount = *count;
-
-    for (vector<int>::iterator i = revList[node].begin(); i != revList[node].end(); ++i) {
-        if (visited[*i] == 1)
-            continue;
-        else if (flag == DFS_V1) {
-            (*attainables1)[*i] = 1;
-            revUtil(flag, *i, visited, attainables1);
-        }
-        else {
-            if ((*attainables1)[*i] == 1) {
-                (*attainables2)[*i] = *count;
-                (*count)++;
-            }
-            revUtil(flag, *i, visited, attainables1, count, attainables2);
-        }
-        if (flag == DFS_V2) (*count) = initialCount;
-    }
-}
-
-bool Graph::dfs(int flag, int *node = NULL, map<int, int> *attainables1 = NULL, map<int, int> *attainables2 = NULL) {
-    int *visited = new int[nodes](), *path;
-    
-    if (flag == CYCLE) {
-        path = new int[nodes]();
-        for (int i = 0; i < nodes; i++) {
-            if (visited[i] == 0)
-                if (cycleUtil(i, visited, path))
-                    return false;
-        }
-    }
-    else if (flag == DFS_V1)
-        revUtil(flag, *node, visited, attainables1);
-    else {
-        int count = 0;
-        revUtil(flag, *node, visited, attainables1, &count, attainables2);
-    }
+    for (int i = 0; i < nodes; i++)
+        if (dfsCycle(i, visited, path))
+            return false;
     return true;
 }
 
-vector<int> Graph::lca(int v1, int v2) {
-    vector<int> results;
-    map<int, int> attainablesV1, attainablesCommon;
-
-    attainablesV1[v1] = 1;
-    dfs(DFS_V1, &v1, &attainablesV1);
-
-    if (attainablesV1[v2] == 1)
-        results.push_back(v2);
-    else {
-        dfs(DFS_V2, &v2, &attainablesV1, &attainablesCommon);
-        for (map<int, int>::iterator i = attainablesCommon.begin(); i != attainablesCommon.end(); ++i) {
-            if (i->second == 0)
-                results.push_back(i->first);
+void Graph::remLca(int node, int *visited, set<int> *parents, set<int> *lca) {
+    queue<int> queue;
+    queue.push(node);
+    while (!queue.empty()) {
+        int i = queue.front();
+        queue.pop();
+        for (vector<int>::iterator j = revList[i].begin(); j != revList[i].end(); ++j) {
+            if (visited[*j] == 0) {
+                visited[*j] = 1;
+                (*parents).erase(*j);
+                queue.push(*j);
+            }
+            else {
+                if ((*parents).find(*j) != (*parents).end()) {
+                    (*parents).erase(*j);
+                    (*lca).erase(*j);
+                }
+            }
         }
     }
-    return results;
+}
+
+void Graph::bfsLca(int flag, int node, set<int> *parents, set<int> *lca = NULL) {
+    int *visited = new int[nodes]();
+    queue<int> queue;
+
+    queue.push(node);
+    visited[node] = 1;
+    while (!queue.empty()) {
+        int i = queue.front();
+        queue.pop();
+        for (vector<int>::iterator j = revList[i].begin(); j != revList[i].end(); ++j) {
+            if (visited[*j] != 0)
+                continue;
+            visited[*j] = 1;
+            if (flag == BFS_V1) {
+                (*parents).insert(*j);
+                queue.push(*j);
+            }
+            else {
+                if ((*parents).find(*j) != (*parents).end()) {
+                    (*lca).insert(*j);
+                    remLca(*j, visited, parents, lca);
+                }
+                else
+                    queue.push(*j);
+            }
+        }
+    }
+}
+
+set<int> Graph::lca(int v1, int v2) {
+    set<int> parentsV1, lca;
+
+    parentsV1.insert(v1);
+    bfsLca(BFS_V1, v1, &parentsV1);
+    
+    if (parentsV1.find(v2) != parentsV1.end())
+        lca.insert(v2);
+    else {
+        bfsLca(BFS_V2, v2, &parentsV1, &lca);
+    }
+    return lca;
 }
 
 /*
@@ -179,7 +179,7 @@ bool buildGraph(Graph &g) {
 }
 
 string resolve() {
-    int v1, v2, nodes, edges, solutionSize;
+    int v1, v2, nodes, edges;
     char c;
 
     if (scanf("%d %d", &v1, &v2) != 2 || v1 <= 0 || v2 <= 0) {
@@ -199,22 +199,17 @@ string resolve() {
         exit(1);
     }
 
-    vector<int> results;
+    set<int> results;
     string solution = "";
     Graph g(nodes, edges);
 
-    if (!buildGraph(g) || !g.dfs(CYCLE))
-        return "0";
-        
+    if (!buildGraph(g) || !g.genTree())
+        return "0";  
     results = g.lca(v1 - 1, v2 - 1);
-    if ((solutionSize = results.size()) == 0)
+    if (results.empty())
         return "-";
-
-    vector<int>::iterator i = results.begin();
-    solution += to_string(*(i++) + 1);
-    for(; i != results.end(); ++i)
-        solution += " " + to_string(*i + 1);
-        
+    for (int i: results)
+        solution += to_string(i + 1) + " ";
     return solution;
 }
 
