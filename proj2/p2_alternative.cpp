@@ -68,11 +68,11 @@ class Graph {
 
         bool genTree();
 
-        void remLca(int node, int *visited);
+        void remLca(int node, int *visited, set<int> *lca);
 
         void bfsLca(int flag, int node, set<int> *lca);
 
-        string lca(int v1, int v2);
+        set<int> lca(int v1, int v2);
 };
 
 bool Graph::dfsCycle(int node, int *visited, int *path) {
@@ -101,22 +101,21 @@ bool Graph::genTree() {
     return true;
 }
 
-void Graph::remLca(int node, int *visited) {
+void Graph::remLca(int node, int *visited, set<int> *lca) {
     queue<int> queue;
     queue.push(node);
     while (!queue.empty()) {
         int i = queue.front();
         queue.pop();
         for (int j = 0; j < revList[i][2]; j++) {
-            if (visited[revList[i][j]] == 0) {
-                visited[revList[i][j]] = 2;
-                revList[revList[i][j]][3] = REMOVED;
-                queue.push(revList[i][j]);
-            }
-            else if (visited[revList[i][j]] == 1) {
-                visited[revList[i][j]] = 2;
-                revList[revList[i][j]][3] = REMOVED;
-            }
+            if (revList[revList[i][j]][3] == REMOVED)
+                continue;
+            revList[revList[i][j]][3] = REMOVED;
+            queue.push(revList[i][j]);
+            if (visited[revList[i][j]] == 0)
+                visited[revList[i][j]] = 1;
+            else if (visited[revList[i][j]] == 1)
+                (*lca).erase(revList[i][j]);
         }
     }
 }
@@ -131,7 +130,7 @@ void Graph::bfsLca(int flag, int node, set<int> *lca = NULL) {
         int i = queue.front();
         queue.pop();
 
-        if (visited[i] == 2)
+        if (flag == BFS_V2 && revList[i][3] == REMOVED)
             continue;
         for (int j = 0; j < revList[i][2]; j++) {
             if (visited[revList[i][j]] != 0)
@@ -142,7 +141,7 @@ void Graph::bfsLca(int flag, int node, set<int> *lca = NULL) {
             else if (flag == BFS_V2 && revList[revList[i][j]][3] == ANCESTRAL_V1) {
                 revList[revList[i][j]][3] = ANCESTRAL_COMMON;
                 (*lca).insert(revList[i][j]);
-                remLca(revList[i][j], visited);
+                remLca(revList[i][j], visited, lca);
                 continue;
             }
             queue.push(revList[i][j]);
@@ -150,32 +149,16 @@ void Graph::bfsLca(int flag, int node, set<int> *lca = NULL) {
     }
 }
 
-string Graph::lca(int v1, int v2) {
-    int nResults = 0;
-    string results = "";
+set<int> Graph::lca(int v1, int v2) {
     set<int> lca;
 
     revList[v1][3] = ANCESTRAL_V1;
     bfsLca(BFS_V1, v1);
-    
-    if (revList[v2][3] == ANCESTRAL_V1) {
-        nResults++;
-        results = to_string(v2 + 1) + " ";
-    }
-    else {
-        bfsLca(BFS_V2, v2, &lca);
-        for (int i: lca)
-            if (revList[i][3] == ANCESTRAL_COMMON) {
-                nResults++;
-                results += to_string(i + 1) + " ";
-            }
-    }
-
-    if (nResults == 0)
-        results = "-\n";
+    if (revList[v2][3] == ANCESTRAL_V1)
+        lca.insert(v2);
     else
-        results += "\n";
-    return results;
+        bfsLca(BFS_V2, v2, &lca);
+    return lca;
 }
 
 /*
@@ -217,7 +200,13 @@ string resolve() {
 
     if (!buildGraph(g) || !g.genTree())
         return "0\n";  
-    return g.lca(v1 - 1, v2 - 1);
+    results = g.lca(v1 - 1, v2 - 1);
+    if (results.empty())
+        return "-\n";
+    for (int i: results)
+        solution += to_string(i + 1) + " ";
+    solution += "\n";
+    return solution;
 }
 
 /*
